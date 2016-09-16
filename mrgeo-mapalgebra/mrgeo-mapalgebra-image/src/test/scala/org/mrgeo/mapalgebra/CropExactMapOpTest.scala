@@ -38,8 +38,8 @@ class CropExactMapOpTest extends FlatSpec with BeforeAndAfter with RasterMapOpTe
     assertResult(4) {
       transformedRDD.count
     }
-    verifyRastersNoData(transformedRDD, Array(11, 12, 19, 20), tileSize, zoomLevel,
-        inputRaster.metadata.get.getDefaultValues(), left, right, bottom, top, Some(expectedData))
+    verifyRastersNoData(transformedRDD, Array[Long](11, 12, 19, 20), tileSize, zoomLevel,
+        inputRaster.metadata.get.getDefaultValues(), left, right, bottom, top, expectedData)
   }
 
   it should "keep the top two tiles when the bounds excludes the bottom two" in {
@@ -155,7 +155,7 @@ class CropExactMapOpTest extends FlatSpec with BeforeAndAfter with RasterMapOpTe
     assertResult(4) {
       transformedRDD.count
     }
-    verifyRastersNoData(transformedRDD, Array(11, 12, 19, 20), tileSize, zoomLevel,
-      rasterMapOpWithBands.metadata.get.getDefaultValues(), left, right, bottom, top, Some(imageData))
+    verifyRastersNoData(transformedRDD, Array[Long](11, 12, 19, 20), tileSize, zoomLevel,
+      rasterMapOpWithBands.metadata.get.getDefaultValues(), left, right, bottom, top, imageData)
   }
 }
