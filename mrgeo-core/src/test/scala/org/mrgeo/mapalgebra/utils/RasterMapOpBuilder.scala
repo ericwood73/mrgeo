@@ -88,6 +88,7 @@ class RasterMapOpBuilder private (var context:SparkContext, numPartitions: Int =
 
     val metadata = SparkUtils.calculateMetadata(rasterMapOp.rdd().get, zoomLevel, imageNodata, true, bounds)
     rasterMapOp.metadata(metadata)
+    rasterMapOp.context(context)
     rasterMapOp
   }
 

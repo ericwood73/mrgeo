@@ -93,6 +93,12 @@ object CostDistanceMapOp extends MapOpRegistrar {
 
     new CostDistanceMapOp(raster, maxCost.toFloat, zoom, sourcePoints)
   }
+
+  def create(raster:RasterMapOp, maxCost: Double, zoom: Int,
+             sourcePointsVector: VectorMapOp): MapOp = {
+
+    new CostDistanceMapOp(raster, maxCost.toFloat, zoom, sourcePointsVector)
+  }
 }
 
 
@@ -117,6 +123,16 @@ class CostDistanceMapOp extends RasterMapOp with Externalizable with Logging {
     this.maxCost = maxCost
     this.sourcePoints = Some(sourcePoints)
     this.srcVector = None
+  }
+
+  private[mapalgebra] def this(friction: RasterMapOp, maxCost: Float, zoom: Int,
+                               sourcePointsVector: VectorMapOp) = {
+    this()
+
+    this.friction = Some(friction)
+    this.maxCost = maxCost
+    this.sourcePoints = None
+    this.srcVector = Some(sourcePointsVector)
   }
 
   private[mapalgebra] def this(node: ParserNode, variables: String => Option[ParserNode]) = {

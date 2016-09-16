@@ -34,7 +34,7 @@ class CropMapOpTest extends FlatSpec with BeforeAndAfter with RasterMapOpTestVer
 
   it should "keep all tiles when the bounds includes all tiles" in {
     subject = CropMapOp.create(inputRaster, -44.0, -44.0, 44.0, 44.0).asInstanceOf[RasterMapOp]
-    subject.execute(subject.context())
+    subject.execute(inputRaster.context())
     val transformedRDD = subject.rdd().get
     assertResult(4) {
       transformedRDD.count

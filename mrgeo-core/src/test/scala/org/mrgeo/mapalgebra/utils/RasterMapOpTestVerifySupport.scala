@@ -6,6 +6,7 @@ import org.mrgeo.data.raster.RasterWritable
 import org.mrgeo.data.tile.TileIdWritable
 import org.mrgeo.utils.tms.TMSUtils
 import org.scalatest.Assertions
+import org.scalatest.Assertions.assertionsHelper
 
 /**
   * Created by ericwood on 8/2/16.
@@ -14,6 +15,7 @@ trait RasterMapOpTestVerifySupport extends RasterMapOpTestSupport {
 
   type RasterVerifier = (Raster) => Unit
   type RasterVerifiers = Map[Long, RasterVerifier]
+  type SampleVerifier = (Int, Int, Int, Double) => Unit
 
   def Assertions = new Object with Assertions
 
@@ -56,7 +58,16 @@ trait RasterMapOpTestVerifySupport extends RasterMapOpTestSupport {
     */
   def verifyRastersNoData(rdd: RDD[_], tileIds: Array[Long], tileSize: Int, zoomLevel: Int, nodatas: Array[Double],
                           left: Double, right: Double, top: Double, bottom: Double,
-                          expectedData: Option[Array[Double]] = None) = {
+                          expectedData: Array[Double]) = {
+    val verifier = (tid: Long, r: Raster) =>
+      verifyRasterNoData(tid, zoomLevel, tileSize, r, nodatas, left, right, top, bottom, expectedData)
+    val verifiers = tileIds.map(t => (t, (r: Raster) => verifier(t, r))).toMap
+    verifyRasters(rdd, verifiers)
+  }
+
+  def verifyRastersNoData(rdd: RDD[_], tileIds: Array[Long], tileSize: Int, zoomLevel: Int, nodatas: Array[Double],
+                          left: Double, right: Double, top: Double, bottom: Double,
+                          expectedData: Option[SampleVerifier] = None) = {
     val verifier = (tid: Long, r: Raster) =>
       verifyRasterNoData(tid, zoomLevel, tileSize, r, nodatas, left, right, top, bottom, expectedData)
     val verifiers = tileIds.map(t => (t, (r: Raster) => verifier(t, r))).toMap
@@ -90,7 +101,30 @@ trait RasterMapOpTestVerifySupport extends RasterMapOpTestSupport {
     * @param bottom
     */
   def verifyRasterNoData(tileId: Long, zoomLevel: Int, tileSize: Int, raster: Raster, nodatas: Array[Double],
-                         left: Double, right: Double, top: Double, bottom: Double, expectedData: Option[Array[Double]]) = {
+                         left: Double, right: Double, top: Double, bottom: Double, expectedData: Array[Double]): Unit = {
+    verifyRasterNoData(tileId, zoomLevel, tileSize, raster, nodatas, left, right, top, bottom,
+                       Some((b: Int, x: Int, y: Int, sample: Double) => {
+                         if (b < expectedData.size)
+                           Assertions.assertResult(expectedData(b), s"Sample at x: $x y: $y band: $b") {
+                             sample
+                           }
+                       }))
+  }
+
+  /**
+    * Verifies that the data outside the the specified bounds is nodata, optionally verifying that all other samples
+    * are in accordance with
+    *
+    * @param raster
+    * @param nodatas
+    * @param left
+    * @param right
+    * @param top
+    * @param bottom
+    */
+  def verifyRasterNoData(tileId: Long, zoomLevel: Int, tileSize: Int, raster: Raster, nodatas: Array[Double],
+                         left: Double, right: Double, top: Double, bottom: Double,
+                         expectedData: Option[SampleVerifier]): Unit = {
 
     // Get the tile for the id and zoom level
     val tile = TMSUtils.tileid(tileId, zoomLevel)
@@ -99,19 +133,20 @@ trait RasterMapOpTestVerifySupport extends RasterMapOpTestSupport {
     val pixelRightTop = TMSUtils.latLonToTilePixelUL(top, right, tile.tx, tile.ty, zoomLevel, tileSize)
     println(s"For Tile $tileId LeftBottom bounds pixel: ${pixelLeftBottom.px}, ${pixelLeftBottom.py}. RightTop bounds pixel: ${pixelRightTop.px}, ${pixelRightTop.py}")
 
+    def nodataVerifyFunc(nodataVal: Double) = (b: Int, x: Int, y: Int, sample: Double) => nodataVal match {
+      case n if n.isNaN => Assertions.assert(sample.isNaN, s"Sample at x: $x y: $y band: $b is NaN")
+      case n => Assertions.assertResult(n, s"Sample at x: $x y: $y band: $b") {sample}
+    }
+
     val verifyExpectedData = expectedData match {
-      case Some(dataArray) => (b: Int, x: Int, y: Int, sample: Double) => Unit
-        if (b < dataArray.size) Assertions.assertResult(dataArray(b), s"Sample at x: $x y: $y band: $b") {
-          sample
-        }
-      case None => (b: Int, x: Int, y: Int, sample: Double) => Unit
+      case Some(f) => f
+      case None => (b: Int, x: Int, y: Int, sample: Double) => Unit // Noop
     }
 
     def verifySample(b: Int, x: Int, y: Int, sample: Double): Unit = {
       (x, y) match {
         case (x, y) if x < pixelLeftBottom.px || x > pixelRightTop.px ||
-          y < pixelLeftBottom.py || y > pixelRightTop.py =>
-          Assertions.assertResult(nodatas(b), s"Sample at x: $x y: $y band: $b") {sample}
+          y < pixelLeftBottom.py || y > pixelRightTop.py => nodataVerifyFunc(nodatas(b))(b, x, y, sample)
         case _ => verifyExpectedData(b, x, y, sample)
       }
     }

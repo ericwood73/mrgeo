@@ -36,6 +36,8 @@ public class MrGeoPublisherFactoryTest {
 
     @Before
     public void setUp() throws Exception {
+        // Clear the properties in case their is a config file
+        MrGeoPublisherFactory.clearCache();
         // Get the MrGeoProperties instance.  Because a static reference to the properties returned are held by the
         // MrGeoProperties class, we can inject any properties needed for testing
         mrGeoProperties = MrGeoProperties.getInstance();

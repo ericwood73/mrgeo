@@ -19,10 +19,8 @@ package org.mrgeo.mapalgebra;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.mrgeo.core.Defs;
 import org.mrgeo.data.ProviderProperties;
 import org.mrgeo.hdfs.utils.HadoopFileUtils;
@@ -37,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class RasterizePointsMapOpTest extends LocalRunnerTest
+public class RasterizePointsMapOpIntegrationTest extends LocalRunnerTest
 {
   private static MapOpTestUtils testUtils;
 
@@ -45,7 +43,7 @@ public class RasterizePointsMapOpTest extends LocalRunnerTest
 // tests won't be run when is set to true
   public final static boolean GEN_BASELINE_DATA_ONLY = false;
 
-  private static final Logger log = LoggerFactory.getLogger(RasterizePointsMapOpTest.class);
+  private static final Logger log = LoggerFactory.getLogger(RasterizePointsMapOpIntegrationTest.class);
   private static String shapefile = "major_road_intersections_exploded";
   private static String cropRaster = "major_road_intersections_exploded_crop_area";
   private static String hdfsShapefile;
@@ -57,10 +55,10 @@ public class RasterizePointsMapOpTest extends LocalRunnerTest
   {
     if (GEN_BASELINE_DATA_ONLY)
     {
-      log.warn("***RasterizePointsMapOpTest TESTS SET TO GENERATE BASELINE IMAGES ONLY***");
+      log.warn("***RasterizePointsMapOpIntegrationTest TESTS SET TO GENERATE BASELINE IMAGES ONLY***");
     }
 
-    testUtils = new MapOpTestUtils(RasterizePointsMapOpTest.class);
+    testUtils = new MapOpTestUtils(RasterizePointsMapOpIntegrationTest.class);
     HadoopFileUtils.delete(testUtils.getInputHdfs());
 
     HadoopFileUtils.copyToHdfs(new Path(testUtils.getInputLocal(), "roads"),
